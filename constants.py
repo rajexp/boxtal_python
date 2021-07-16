@@ -7,3 +7,7 @@ class RunMode(Enum):
 class RequestType(Enum):
     GET = "GET"
     POST = "POST"
+
+class ResponseFormat(Enum):
+    XML = "XML"
+    JSON = "JSON"
