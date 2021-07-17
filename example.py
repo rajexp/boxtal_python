@@ -36,7 +36,7 @@ if __name__ == '__main__':
         "collecte": collection_date, "delai": delay}
     # Preparing the package parameters which are of type <type>_N.<poids/longueur/largeur/hauteur>
     for index, package_info in enumerate(packages):
-        package_prefix = f'{package_info["type"]}_{index}'
+        package_prefix = f'{package_info["type"]}_{index+1}'
         quotation_parameters.update({f'{package_prefix}.poids': package_info['poids'], f'{package_prefix}.longueur': package_info['longueur'],
             f'{package_prefix}.largeur': package_info['largeur']})
         # Since hauteur is only applicable for package of type except pli
