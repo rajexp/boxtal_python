@@ -33,7 +33,7 @@ if __name__ == '__main__':
         "code_contenu": content_code, "type.valeur": item_value_in_euros,
         "expediteur.type": sender_type, "expediteur.pays": sender_country_code, "expediteur.code_postal": sender_postal_code,
         "destinataire.type": sender_type, "destinataire.pays": sender_country_code, "destinataire.code_postal": sender_postal_code,
-        "collecte": collection_date, "délai": delay}
+        "collecte": collection_date, "delai": delay}
     # Preparing the package parameters which are of type <type>_N.<poids/longueur/largeur/hauteur>
     for index, package_info in enumerate(packages):
         package_prefix = f'{package_info["type"]}_{index}'
