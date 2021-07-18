@@ -1,3 +1,4 @@
+import json
 from boxtal import BoxtalAPI
 from constants import RunMode, ResponseFormat
 
@@ -5,6 +6,18 @@ from constants import RunMode, ResponseFormat
 USER_EMAIL = ""
 USER_PASSWORD = ""
 API_KEY = ""
+
+def create_package_param_dict(packages):
+    out_dict = {}
+    for index, package_info in enumerate(packages):
+        package_prefix = '{}_{}'.format(package_info.get("type"), index+1)
+        out_dict.update({'{}.poids'.format(package_prefix): package_info['poids'], '{}.longueur'.format(package_prefix): package_info['longueur'],
+            '{}.largeur'.format(package_prefix): package_info['largeur']})
+
+        # Since hauteur is only applicable for package of type except pli
+        if package_info["type"] != "pli":
+            out_dict.update({'{}.hauteur'.format(package_prefix): package_info['hauteur']})
+    return out_dict
 
 if __name__ == '__main__':
     api = BoxtalAPI()
@@ -19,7 +32,7 @@ if __name__ == '__main__':
     # You can add multiple packages below
     packages = [{"type": "colis", "poids": 3, "longueur": 7, "largeur": 8, "hauteur":11},
                 {"type": "pli", "poids": 10, "longueur": 6, "largeur": 8}]
-    item_value_in_euros = 10
+    package_type_value_in_euros = {"colis": 10, "pli": 8} # Save the different package type value in euros
     content_code = "10120"
     sender_country_code = "FR"
     sender_postal_code = "44000"
@@ -30,16 +43,77 @@ if __name__ == '__main__':
     collection_date = "2021-07-18" # YYYY-MM-DD format
     delay = "aucun" # 'aucun', ‘minimum’ or ‘course’
     quotation_parameters = {
-        "code_contenu": content_code, "type.valeur": item_value_in_euros,
+        "code_contenu": content_code,
         "expediteur.type": sender_type, "expediteur.pays": sender_country_code, "expediteur.code_postal": sender_postal_code,
         "destinataire.type": sender_type, "destinataire.pays": sender_country_code, "destinataire.code_postal": sender_postal_code,
         "collecte": collection_date, "delai": delay}
     # Preparing the package parameters which are of type <type>_N.<poids/longueur/largeur/hauteur>
-    for index, package_info in enumerate(packages):
-        package_prefix = '{}_{}'.format(package_info.get("type"), index+1)
-        quotation_parameters.update({'{}.poids'.format(package_prefix): package_info['poids'], '{}.longueur'.format(package_prefix): package_info['longueur'],
-            '{}.largeur'.format(package_prefix): package_info['largeur']})
-        # Since hauteur is only applicable for package of type except pli
-        if package_info["type"] != "pli":
-            quotation_parameters.update({'{}.hauteur'.format(package_prefix): package_info['hauteur']})
+    quotation_parameters.update(create_package_param_dict(packages))
+    for package_type, money_value in package_type_value_in_euros.items():
+        quotation_parameters.update({'{}.valeur'.format(package_type): money_value})
     _, quotation = api.get_quotation(parameters=quotation_parameters)
+
+    _, countries = api.get_countries()
+
+    # Example of order API and order status API
+    platform="api"
+    sender_country_code = "FR"
+    sender_postal_code = "44000"
+    sender_type = "particulier" # ‘particulier’ or ‘entreprise’
+    sender_company_name ="" # Required if sender_type is ‘entreprise’
+    sender_city = "Paris"
+    sender_address = "Some address here"
+    sender_address_additional_info = ""
+    sender_title = "Mr"
+    sender_name = "Nikola"
+    sender_surname = "Tesla"
+    sender_email = "example@example.com"
+    sender_tel = "000000000"
+    receiver_country_code = "US"
+    receiver_postal_code = "75002"
+    receiver_type = "particulier" # ‘particulier’ or ‘entreprise’
+    receiver_company_name ="" # Required if receiver_type is ‘entreprise’
+    receiver_city = "New York"
+    receiver_address = "Some address here"
+    receiver_address_additional_info = ""
+    receiver_title = "Mr"
+    receiver_name = "Nikola"
+    receiver_surname = "Tesla"
+    receiver_email = "example@example.com"
+    receiver_tel = "000000000"
+    delay = "aucun" # 'aucun', ‘minimum’ or ‘course’
+    content_code = "10120"
+    collection_date = "2021-07-21" # YYYY-MM-DD format
+    packages = [{"type": "colis", "poids": 3, "longueur": 7, "largeur": 8, "hauteur":11},
+                {"type": "pli", "poids": 10, "longueur": 6, "largeur": 8}]
+    package_type_value_in_euros = {"colis": 10, "pli": 8} # Save the different package type value in euros
+    order_info = {
+        "platform": platform,
+        "expediteur.type": sender_type, "expediteur.pays": sender_country_code, "expediteur.code_postal": sender_postal_code,
+        "expediteur.ville": sender_city, "expediteur.adresse": sender_address,  "expediteur.civilite": sender_title,
+        "expediteur.prenom": sender_name, "expediteur.nom": sender_surname, "expediteur.email": sender_email,
+        "expediteur.tel": sender_tel, "expediteur.infos": sender_address_additional_info,
+        "destinataire.type": receiver_type, "destinataire.pays": receiver_country_code, "destinataire.code_postal": receiver_postal_code,
+        "destinataire.ville": receiver_city, "destinataire.adresse": receiver_address,  "destinataire.civilite": receiver_title,
+        "destinataire.prenom": receiver_name, "destinataire.nom": receiver_surname, "destinataire.email": receiver_email,
+        "destinataire.tel": receiver_tel, "destinataire.infos": receiver_address_additional_info,
+        "code_contenu": content_code, "collecte": collection_date, "delai": delay}
+    # Block for Optional Parameter
+    if False:
+        pickup_availability_time = "09:00" # Time in HH:MM format (24 hours format)
+        delivery_availability_time = "19:00" # Time in HH:MM format (24 hours format)
+        final_date_of_delivery = "25-07-2021" # Final date DD-MM-YYYY till package must be delivered.
+        order_info.update({"disponibilite.HDE": pickup_availability_time, "disponibilite.HLE": delivery_availability_time, "livraison_imperative.DIL": final_date_of_delivery})
+    # Preparing the package parameters which are of type <type>_N.<poids/longueur/largeur/hauteur>
+    order_info.update(create_package_param_dict(packages))
+    for package_type, money_value in package_type_value_in_euros.items():
+        order_info.update({'{}.valeur'.format(package_type): money_value})
+    _, order = api.create_order(order_info=order_info)
+    # You should save the order object you get above for future reference purpose
+    # Saving it in a order.json file here just for demo
+    with open("order.json", "w") as f:
+        f.write(json.dumps(order))
+    order_reference = order.get("data", {}).get("order", {}).get("shipment", {}).get("reference", "")
+    print("Reference:", order_reference)
+    if order_reference:
+        _, order_status = api.get_order_status(order_reference)

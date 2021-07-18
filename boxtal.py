@@ -72,7 +72,7 @@ class BoxtalAPI():
             req = requests.post(url, params=params, data=data, headers={'access_key': self._api_key}, auth=HTTPBasicAuth(self._user_email, self._pwd))
         else:
             raise Exception("Unhandled HTTP method accessed in make_request")
-        logging.info("Requesting: " + req.url)
+        logging.info(" {}: {} Payload: {}".format(req.request.method, req.url, req.request.body))
         if self.response_format == ResponseFormat.JSON:
             if req.ok:
                 result = {"data": json.loads(json.dumps(xmltodict.parse(req.text))), "error": {}, "status_code": req.status_code}
@@ -130,3 +130,41 @@ class BoxtalAPI():
         """
         content_endpoint = "/api/{}/countries".format(self.api_version)
         return self._make_request(content_endpoint)
+
+    def get_pickup_point_info(self, point_code):
+        """
+        Method for getting arrival relay points
+        Returns:
+        XML/JSON Dictionary of arrival relay points
+        """
+        url_endpoint = "/api/{}/pickup_point/{}/informations".format(self.api_version, point_code)
+        return self._make_request(url_endpoint)
+
+    def get_dropoff_point_info(self, point_code):
+        """
+        Method for getting of departure relay points
+        Returns:
+        XML/JSON Dictionary of departure relay points
+        """
+        url_endpoint = "/api/{}/dropoff_point/{}/informations".format(self.api_version, point_code)
+        return self._make_request(url_endpoint)
+
+    def create_order(self, order_info={}):
+        """
+        Method for creating package order
+        Returns:
+        XML/JSON containing order information
+        """
+        url_endpoint = "/api/{}/order".format(self.api_version)
+        return  self._make_request(url_endpoint, type=RequestType.POST, data=order_info)
+
+    def get_order_status(self, order_reference):
+        """
+        Method for checking real time order status placed via API
+        Params:
+        order_reference:string the order refernce you get from the order api
+        Returns:
+        XML/JSON containing real time order status info.
+        """
+        url_endpoint = "/api/{}/order_status/{}/informations".format(self.api_version, order_reference)
+        return self._make_request(url_endpoint)
