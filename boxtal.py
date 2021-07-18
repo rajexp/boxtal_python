@@ -6,6 +6,9 @@ from requests.auth import HTTPBasicAuth
 from constants import RunMode, RequestType, ResponseFormat
 
 import sys
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more recent version is required.")
@@ -62,19 +65,21 @@ class BoxtalAPI():
         self.api_version = api_version
 
     def _make_request(self, endpoint, type=RequestType.GET, params={}, data={}):
-        url = f'{self.server_url}{endpoint}'
+        url = '{}{}'.format(self.server_url, endpoint)
         if type == RequestType.GET:
             req = requests.get(url, params=params, headers={'access_key': self._api_key}, auth=HTTPBasicAuth(self._user_email, self._pwd))
         elif type == RequestType.POST:
             req = requests.post(url, params=params, data=data, headers={'access_key': self._api_key}, auth=HTTPBasicAuth(self._user_email, self._pwd))
         else:
             raise Exception("Unhandled HTTP method accessed in make_request")
+        logging.info("Requesting: " + req.url)
         if self.response_format == ResponseFormat.JSON:
             if req.ok:
-                result = {"data": json.loads(json.dumps(xmltodict(req.text))), "error": {}, "status_code": req.status_code}
+                result = {"data": json.loads(json.dumps(xmltodict.parse(req.text))), "error": {}, "status_code": req.status_code}
             else:
                 result = {"data": {},  "status_code": req.status_code}
-                result.update(json.loads(json.dumps(xmltodict(req.text))))
+                text = req.text
+                result.update(json.loads(json.dumps(xmltodict.parse(text))))
             return req.status_code,  result
         else:
             return req.status_code, req.text
@@ -85,7 +90,7 @@ class BoxtalAPI():
         Returns:
         XML/JSON containing the content categories Ref: https://www.boxtal.com/fr/en/api
         """
-        content_category_endpoint = f"/api/{self.api_version}/content_categories"
+        content_category_endpoint = "/api/{}/content_categories".format(self.api_version)
         return self._make_request(content_category_endpoint)
 
     def get_all_content(self):
@@ -94,7 +99,7 @@ class BoxtalAPI():
         Returns:
         XML/JSON containing the content list Ref: https://www.boxtal.com/fr/en/api
         """
-        content_endpoint = f"/api/{self.api_version}/content"
+        content_endpoint = "/api/{}/contents".format(self.api_version)
         return self._make_request(content_endpoint)
 
     def get_content_by_category(self, category_id):
@@ -103,7 +108,7 @@ class BoxtalAPI():
         Returns:
         XML/JSON containing the content list specific to category id Ref: https://www.boxtal.com/fr/en/api
         """
-        content_endpoint = f"/api/{self.api_version}/content_category/{category_id}/contents"
+        content_endpoint = "/api/{}/content_category//contents".format(self.api_version, category_id)
         return self._make_request(content_endpoint)
 
     def get_quotation(self, parameters={}):
@@ -114,7 +119,7 @@ class BoxtalAPI():
         Returns:
         XML/JSON containing the  quotation response
         """
-        content_endpoint = f"/api/{self.api_version}/cotation"
+        content_endpoint = "/api/{}/cotation".format(self.api_version)
         return self._make_request(content_endpoint, params=parameters)
 
     def get_countries(self):
@@ -123,6 +128,5 @@ class BoxtalAPI():
         Returns:
         XML/JSON containing list of country and country codes object.
         """
-        content_endpoint = f"/api/{self.api_version}/countries"
+        content_endpoint = "/api/{}/countries".format(self.api_version)
         return self._make_request(content_endpoint)
-
