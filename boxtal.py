@@ -156,7 +156,7 @@ class BoxtalAPI():
         XML/JSON containing order information
         """
         url_endpoint = "/api/{}/order".format(self.api_version)
-        return  self._make_request(url_endpoint, type=RequestType.POST, data=order_info)
+        return  self._make_request(url_endpoint, type=RequestType.POST, params=order_info)
 
     def get_order_status(self, order_reference):
         """
