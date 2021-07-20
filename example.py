@@ -13,6 +13,8 @@ def create_package_param_dict(packages):
         package_prefix = '{}_{}'.format(package_info.get("type"), index+1)
         out_dict.update({'{}.poids'.format(package_prefix): package_info['poids'], '{}.longueur'.format(package_prefix): package_info['longueur'],
             '{}.largeur'.format(package_prefix): package_info['largeur']})
+        if package_info.get("description"): # Required for order
+            out_dict.update({"{}.description".format(package_info.get("type")): package_info["description"]})
 
         # Since hauteur is only applicable for package of type except pli
         if package_info["type"] != "pli":
@@ -84,8 +86,16 @@ if __name__ == '__main__':
     delay = "aucun" # 'aucun', ‘minimum’ or ‘course’
     content_code = "10120"
     collection_date = "2021-07-21" # YYYY-MM-DD format
-    packages = [{"type": "colis", "poids": 3, "longueur": 7, "largeur": 8, "hauteur":11},
-                {"type": "pli", "poids": 10, "longueur": 6, "largeur": 8}]
+
+    # Information to be selected from quotation API offer
+    # This need to be set according to selected offer or you may have some preference set of service operators to select from
+    # to chose relevant offer from given ones
+    selected_offer_index = 0 # I am selecting first offer
+    operator = "SOGP"  # quotation["data"]["cotation"]["shipment"]["offer"][selected_offer_index]["operator"]["code"]
+    service = "RelaisColis" # quotation["data"]["cotation"]["shipment"]["offer"][selected_offer_index]["service"]["code"]
+
+    packages = [{"type": "colis", "poids": 3, "longueur": 7, "largeur": 8, "hauteur":11, "description": "Newspapers"},
+                {"type": "pli", "poids": 10, "longueur": 6, "largeur": 8, "description": "Cloth"}]
     package_type_value_in_euros = {"colis": 10, "pli": 8} # Save the different package type value in euros
     order_info = {
         "platform": platform,
@@ -97,17 +107,27 @@ if __name__ == '__main__':
         "destinataire.ville": receiver_city, "destinataire.adresse": receiver_address,  "destinataire.civilite": receiver_title,
         "destinataire.prenom": receiver_name, "destinataire.nom": receiver_surname, "destinataire.email": receiver_email,
         "destinataire.tel": receiver_tel, "destinataire.infos": receiver_address_additional_info,
-        "code_contenu": content_code, "collecte": collection_date, "delai": delay}
-    # Block for Optional Parameter
-    if False:
+        "code_contenu": content_code, "collecte": collection_date, "delai": delay, "service": service, "operateur": operator}
+    # Block for Optional Parameter in Order
+    if True:
         pickup_availability_time = "09:00" # Time in HH:MM format (24 hours format)
         delivery_availability_time = "19:00" # Time in HH:MM format (24 hours format)
         final_date_of_delivery = "25-07-2021" # Final date DD-MM-YYYY till package must be delivered.
-        order_info.update({"disponibilite.HDE": pickup_availability_time, "disponibilite.HLE": delivery_availability_time, "livraison_imperative.DIL": final_date_of_delivery})
+        # Information to be selected from quotation API same service offer
+        pickup_point_code = "SOGP-O1100" # list(filter(lambda x: x["code"] == "retrait.pointrelais", quotation["data"]["cotation"]["shipment"]["offer"][selected_offer_index]["mandatory_informations"]["parameter"])[0]["type"]["enum"]["value"][0]
+        dropoff_point_code = "SOGP-O1177" # list(filter(lambda x: x["code"] == "depot.pointrelais", quotation["data"]["cotation"]["shipment"]["offer"][selected_offer_index]["mandatory_informations"]["parameter"])[0]["type"]["enum"]["value"][0]
+        insurance = False # For insurance if True please Ref https://www.boxtal.com/fr/en/api for related parameters
+        if insurance is False:
+            order_info.update({"assurance.selected": "false"})
+        order_info.update({"disponibilite.HDE": pickup_availability_time, "disponibilite.HLE": delivery_availability_time, "livraison_imperative.DIL": final_date_of_delivery, "retrait.pointrelais": pickup_point_code, "depot.pointrelais": dropoff_point_code})
     # Preparing the package parameters which are of type <type>_N.<poids/longueur/largeur/hauteur>
     order_info.update(create_package_param_dict(packages))
     for package_type, money_value in package_type_value_in_euros.items():
         order_info.update({'{}.valeur'.format(package_type): money_value})
+
+    _, pickup_info = api.get_pickup_point_info(pickup_point_code)
+    _, dropoff_info = api.get_dropoff_point_info(dropoff_point_code)
+
     _, order = api.create_order(order_info=order_info)
     # You should save the order object you get above for future reference purpose
     # Saving it in a order.json file here just for demo
