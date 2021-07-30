@@ -45,13 +45,13 @@ class BoxtalAPI():
         else:
             self.server_url = self._PROD_SERVER_URL
     
-    def set_api_response_format(self, format):
+    def set_api_response_format(self, format=ResponseFormat.XML):
         """
         Method for setting API module mode
         Params:
         format: 'JSON' or 'XML' for selecting the API output format
         """
-        if (isinstance(format, str) and format.lower()==ResponseFormat.XML.value) or (isinstance(format, RunMode) and format == RunMode.XML):
+        if (isinstance(format, str) and format.lower()==ResponseFormat.XML.value) or (isinstance(format, ResponseFormat) and format==ResponseFormat.XML):
             self.response_format = ResponseFormat.XML
         else:
             self.response_format = ResponseFormat.JSON
